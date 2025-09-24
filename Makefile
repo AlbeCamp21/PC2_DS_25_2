@@ -1,6 +1,6 @@
 # Variables
 SHELL := /bin/bash
-.PHONY: tools build test run pack clean help
+.PHONY: tools prepare build test run pack clean help
 .DEFAULT_GOAL := help
 OUT_DIR := out
 DIST_DIR := dist
@@ -17,11 +17,14 @@ tools: ## Verificación de herramientas requeridas
 	done
 	@echo -e "\n[+] Todas las herramientas están instaladas" 
 
-build: ## Crear entorno de trabajo
+prepare: ## Crear entorno de trabajo
 	@echo -e "\n[+] Configurando entorno de trabajo..."
 	@cp docs/.env.example .env
 	@chmod +x src/*.sh
 	@echo -e "\n[+] Entorno creado correctamente" 
+
+build: ## Generar artefactos intermedios en out/
+	@echo -e "\n[+] Generando..."
 
 test: ## Ejecutar tests
 	@echo -e "\n[+] Ejecutando pruebas..."
