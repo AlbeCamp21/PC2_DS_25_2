@@ -25,6 +25,6 @@ nano .env
 ### Opción 2: Configuración automática con Makefile
 Ejecute desde la raíz del proyecto:
 ```bash
-make build
+make prepare
 ```
 Luego, editar el .env según sus necesidades.
