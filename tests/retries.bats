@@ -10,12 +10,12 @@ setup() {
 
     # make executables in src/ visible to PATH
     PATH="$DIR/../src:$PATH"
-    
+
     TEST_URL="http://127.0.0.1:9999/unreachable"
 }
 
 @test "cliente reintenta en caso de timeout" {
-    run cliente.sh "$TEST_URL"
+    run cliente.sh GET "$TEST_URL"
     assert_failure
     assert_output --partial 'Intento 3'
 }
