@@ -8,14 +8,14 @@ setup() {
     # o al archivo preprocesado respectivamente
     DIR="$( cd "$( dirname "$BATS_TEST_FILENAME" )" >/dev/null 2>&1 && pwd )"
 
-    # make executables in src/ visible to PATH
+    # hacer los ejecutables en src/ visibles a la variable de entorno PATH
     PATH="$DIR/../src:$PATH"
 
     TEST_URL="http://127.0.0.1:9999/unreachable"
 }
 
 @test "cliente reintenta en caso de timeout" {
-    run cliente.sh "$TEST_URL"
+    run cliente.sh GET "$TEST_URL"
     assert_failure
     assert_output --partial 'Intento 3'
 }
