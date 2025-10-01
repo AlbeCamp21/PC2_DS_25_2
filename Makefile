@@ -1,10 +1,26 @@
 # Variables
 SHELL := /bin/bash
-.PHONY: tools prepare build test run pack clean help
+.PHONY: tools prepare build test run pack clean help deps
 .DEFAULT_GOAL := help
 OUT_DIR := out
 DIST_DIR := dist
 TEST_DIR := tests
+BATS_HELPER_DIR:= $(TEST_DIR)/test_helper
+
+# pares "nombre=repo", extensible desde un solo lugar
+BATS_MODULES := \
+	bats-support=https://github.com/bats-core/bats-support.git \
+	bats-assert=https://github.com/bats-core/bats-assert.git
+
+# expande en rutas locales, ej. tests/test_helper/bats-support/.git
+BATS_TARGETS := $(foreach m,$(BATS_MODULES),$(BATS_HELPER_DIR)/$(firstword $(subst =, ,$m))/.git)
+
+deps: $(BATS_TARGETS) ## Instala dependencias
+
+# clona si no existe el directorio .git
+$(BATS_HELPER_DIR)/%/.git:
+	@echo "Instalando $*..."
+	@git clone --depth 1 $(word 2,$(subst =, ,$(filter $*=%,$(BATS_MODULES)))) $(BATS_HELPER_DIR)/$*
 
 tools: ## Verificación de herramientas requeridas
 	@echo -e "\n[+] Verificando herramientas...\n"
@@ -26,8 +42,9 @@ prepare: ## Crear entorno de trabajo
 build: ## Generar artefactos intermedios en out/
 	@echo -e "\n[+] Generando..."
 
-test: ## Ejecutar tests
+test: deps ## Ejecutar tests
 	@echo -e "\n[+] Ejecutando pruebas..."
+	bats tests/*.bats
 
 run: ## Ejecutar cliente CLI con reintentos y métricas
 	@echo -e "\n[+] Ejecutando cliente CLI..."
