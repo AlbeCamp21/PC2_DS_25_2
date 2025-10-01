@@ -1,10 +1,21 @@
 # Variables
 SHELL := /bin/bash
-.PHONY: tools prepare build test run pack clean help
+.PHONY: tools prepare build test run pack clean help deps
 .DEFAULT_GOAL := help
 OUT_DIR := out
 DIST_DIR := dist
 TEST_DIR := tests
+
+# Variables con rutas de destino
+BATS_HELPER_DIR := $(TEST_DIR)/test_helper
+BATS_SUPPORT_DIR := $(BATS_HELPER_DIR)/bats-support
+BATS_ASSERT_DIR  := $(BATS_HELPER_DIR)/bats-assert
+BATS_FILE_DIR    := $(BATS_HELPER_DIR)/bats-file
+
+# Archivos que se generan al clonar
+BATS_SUPPORT_LOAD := $(BATS_SUPPORT_DIR)/load.bash
+BATS_ASSERT_LOAD  := $(BATS_ASSERT_DIR)/load.bash
+BATS_FILE_LOAD    := $(BATS_FILE_DIR)/load.bash
 
 tools: ## Verificación de herramientas requeridas
 	@echo -e "\n[+] Verificando herramientas...\n"
@@ -17,6 +28,17 @@ tools: ## Verificación de herramientas requeridas
 	done
 	@echo -e "\n[+] Todas las herramientas están instaladas" 
 
+deps: $(BATS_SUPPORT_LOAD) $(BATS_ASSERT_LOAD) $(BATS_FILE_LOAD)
+
+$(BATS_SUPPORT_LOAD):
+	git clone --depth 1 https://github.com/bats-core/bats-support.git $(BATS_SUPPORT_DIR)
+
+$(BATS_ASSERT_LOAD):
+	git clone --depth 1 https://github.com/bats-core/bats-assert.git $(BATS_ASSERT_DIR)
+
+$(BATS_FILE_LOAD):
+	git clone --depth 1 https://github.com/bats-core/bats-file.git $(BATS_FILE_DIR)
+
 prepare: ## Crear entorno de trabajo
 	@echo -e "\n[+] Configurando entorno de trabajo..."
 	@cp docs/.env.example .env
@@ -26,7 +48,7 @@ prepare: ## Crear entorno de trabajo
 build: ## Generar artefactos intermedios en out/
 	@echo -e "\n[+] Generando..."
 
-test: ## Ejecutar tests
+test: deps ## Ejecutar tests
 	@echo -e "\n[+] Ejecutando pruebas..."
 
 run: ## Ejecutar cliente CLI con reintentos y métricas
