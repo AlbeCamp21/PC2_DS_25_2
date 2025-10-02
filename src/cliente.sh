@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# Configuracion de robustez
+set -eo pipefail
+
+# Trap para capturar errores
+trap 'echo -e "\n${rojoColor}[ERROR]${finColor} Script terminado en línea $LINENO" >&2; exit 1' ERR
+
+# Cargar funciones de src/utils.sh
+source "$(dirname "$0")/utils.sh"
+
 verdeColor="\e[0;32m\033[1m"
 finColor="\033[0m\e[0m"
 rojoColor="\e[0;31m\033[1m"
@@ -50,7 +59,7 @@ do_request() {
                 curl_comand="$curl_comand -X GET '$url'"
                 ;;
             "POST")
-                curl_comand="$curl_comand -X POST -H 'Content-Type: application/json' -d '$body' $url"
+                curl_comand="$curl_comand -X POST -H 'Content-Type: application/json' -d '$body' '$url'"
                 ;;
             "PUT")
                 curl_comand="$curl_comand -X PUT -H 'Content-Type: application/json' -d '$body' '$url'"
@@ -94,18 +103,24 @@ do_request() {
 
 request_get() {
     local url="$1"
-    do_request "GET" "$url"
+    do_request "GET" "$url" ""
 }
 
 request_post() {
     local url="$1"
-    local body="${2:-{ \"Nombre\" : \"Fisica 2\", \"Codigo\" : \"CF2A2\" }}"
+    local body="$2"
+    if [ -z "$body" ]; then
+        body='{"Nombre":"Fisica 2","Codigo":"CF2A2"}'
+    fi
     do_request "POST" "$url" "$body"
 }
 
 request_put() {
     local url="$1"
-    local body="${2:-{ \"Nombre\" : \"Laboratorio de Fisica 1\", \"Codigo\" : \"CF2A2\" }}"
+    local body="$2"
+    if [ -z "$body" ]; then
+        body='{"Nombre":"Laboratorio de Fisica 1","Codigo":"CF2A2"}'
+    fi
     do_request "PUT" "$url" "$body"
 }
 
@@ -124,13 +139,11 @@ validate_url() {
 
 mkdir -p out
 
-# Valida si existe .env
-if [ -f ".env" ]; then
-    source ".env"
-else
-    echo -e "\n${rojoColor}[!]${finColor} ${grisColor}ERROR: No se encontró '.env'${finColor}">&2
-    exit 1
-fi
+# Cargar variables de entorno usando función de utils
+cargar_env || exit 1
+
+# Verificar que las variables críticas existen
+verificar_variables_env || exit 1
 
 # Extrae las variables de entorno
 readonly MAX_RETRIES=${MAX_RETRIES:-3}
@@ -151,7 +164,7 @@ fi
 # Parametros de entrada
 METHOD=$(echo "$1" | tr '[:lower:]' '[:upper:]')
 URL="$2"
-BODY="$3"
+BODY="${3:-}"
 
 validate_url "$URL"
 
