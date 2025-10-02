@@ -23,9 +23,10 @@ readonly EXIT_FAILURE_GENERIC=1
 readonly EXIT_FAILURE_NETWORK=2
 
 show_help() {
-    echo -e "\n${amarilloColor}[■]${finColor}${grisColor} Uso: $0 ${finColor}${moradoColor}[GET|POST|PUST] <URL> <BODY(opcional)>${finColor}\n"
+    echo -e "\n${amarilloColor}[■]${finColor}${grisColor} Uso: $0 ${finColor}${moradoColor}[GET|POST|PUST] <URL> <BODY(opcional)> [--idempotencykey <KEY>]${finColor}\n"
     echo -e "\t${turquesaColor}- Descripción:${finColor}${grisColor} CLI para HTTP con reintentos, backoff exponencial y métricas de latencia ${finColor}"
     echo -e "\t${turquesaColor}- Variables:${finColor}${grisColor} MAX_RETRIES, BACKOFF_MS ${finColor}"
+    echo -e "\t${turquesaColor}- Idempotencia:${finColor}${grisColor} POST genera key automático o usa --idempotencykey ${finColor}"
     echo -e "\t${turquesaColor}- Códigos de salida:${finColor} ${amarilloColor}0 = ok$, 1 = error generico, 2 = error de red${finColor}\n"
 }
 
@@ -43,6 +44,7 @@ do_request() {
     local method="$1"
     local url="$2"
     local body="$3"
+    local idempotency_key="$4"
     local attempt=1
     local status_code=0
     local start_time=$(now_ms)
@@ -59,7 +61,7 @@ do_request() {
                 curl_comand="$curl_comand -X GET '$url'"
                 ;;
             "POST")
-                curl_comand="$curl_comand -X POST -H 'Content-Type: application/json' -d '$body' '$url'"
+                curl_comand="$curl_comand -X POST -H 'Content-Type: application/json' -H 'Idempotency-Key: $idempotency_key' -d '$body' $url"
                 ;;
             "PUT")
                 curl_comand="$curl_comand -X PUT -H 'Content-Type: application/json' -d '$body' '$url'"
@@ -75,7 +77,13 @@ do_request() {
         local attempt_end=$(now_ms)
         local attempt_duration=$((attempt_end - attempt_start))
 
-        echo "$(date '+%d-%b-%Y_%H%M%S') - Intento $attempt/$MAX_RETRIES - $method $url - Status: $status_code - Duración: ${attempt_duration}ms" >> out/requests_${method}_$(basename "$url").log
+        local log_entry="- Intento $attempt/$MAX_RETRIES - $method $url - Status: $status_code - Duración: ${attempt_duration}ms"
+        
+        if [ "$method" = "POST" ] && [ -n "$idempotency_key" ]; then
+            log_entry="$log_entry - IdempotencyKey: $idempotency_key"
+        fi
+        
+        log_con_tiempo "$log_entry">> out/requests_${method}_$(basename "$url").log
 
         if [ $curl_exit_code -eq 0 ] && [ "$status_code" -ge 200 ] && [ "$status_code" -lt 300 ]; then
             local total_duration=$(($(now_ms) - start_time))
@@ -103,16 +111,21 @@ do_request() {
 
 request_get() {
     local url="$1"
-    do_request "GET" "$url" ""
+    do_request "GET" "$url" "" ""
 }
 
 request_post() {
     local url="$1"
     local body="$2"
+    local idempotency_key="$3"
     if [ -z "$body" ]; then
         body='{"Nombre":"Fisica 2","Codigo":"CF2A2"}'
     fi
-    do_request "POST" "$url" "$body"
+    if [ -z "$idempotency_key" ]; then
+        idempotency_key=$(generar_llave_hash "$url" "$body")
+    fi
+    log_con_tiempo "- POST $url - Key: $idempotency_key" >> out/post-keys.log
+    do_request "POST" "$url" "$body" "$idempotency_key"
 }
 
 request_put() {
@@ -121,7 +134,7 @@ request_put() {
     if [ -z "$body" ]; then
         body='{"Nombre":"Laboratorio de Fisica 1","Codigo":"CF2A2"}'
     fi
-    do_request "PUT" "$url" "$body"
+    do_request "PUT" "$url" "$body" ""
 }
 
 validate_url() {
@@ -154,17 +167,39 @@ if [ ! -f "out/metrics.csv" ]; then
     echo "timestamp,método,URL,intentos,status_code,duración_ms" > out/metrics.csv
 fi
 
+# Verificar la llave en caso puso la flag --idempotencykey
+CUSTOM_IDEMPOTENCY_KEY=""
+ARGS=()
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --idempotencykey)
+            if [[ -z "$2" ]]; then
+                echo -e "\n${rojoColor}[!]${finColor} ${grisColor}Error: --idempotencykey requiere un valor${finColor}">&2
+                show_help
+                exit $EXIT_FAILURE_GENERIC
+            fi
+            CUSTOM_IDEMPOTENCY_KEY="$2"
+            shift 2
+        ;;
+        *)
+            ARGS+=("$1")
+            shift
+        ;;
+    esac
+done
+
 # Verificar argumentos
-if [ $# -lt 2 ] || [ $# -gt 3 ]; then
-    echo -e "\n${rojoColor}[!]${finColor} ${grisColor}Error: Número incorrecto de argumentos${finColor}">&2
+if [ ${#ARGS[@]} -lt 2 ] || [ ${#ARGS[@]} -gt 3 ]; then
+    echo -e "\n${rojoColor}[!]${finColor} ${grisColor}Error: Número incorrecto de argumentos o flags mal escritas${finColor}">&2
     show_help
     exit $EXIT_FAILURE_GENERIC
 fi
 
 # Parametros de entrada
-METHOD=$(echo "$1" | tr '[:lower:]' '[:upper:]')
-URL="$2"
-BODY="${3:-}"
+METHOD=$(echo "${ARGS[0]}" | tr '[:lower:]' '[:upper:]')
+URL="${ARGS[1]}"
+BODY="${ARGS[2]:-}"
 
 validate_url "$URL"
 
@@ -173,7 +208,11 @@ case "$METHOD" in
         request_get "$URL"
         ;;
     "POST")
-        request_post "$URL" "$BODY"
+        if [ -n "$CUSTOM_IDEMPOTENCY_KEY" ]; then
+            request_post "$URL" "$BODY" "$CUSTOM_IDEMPOTENCY_KEY"
+        else
+            request_post "$URL" "$BODY" ""
+        fi
         ;;
     "PUT")
         request_put "$URL" "$BODY"

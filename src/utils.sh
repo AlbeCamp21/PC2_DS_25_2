@@ -38,6 +38,12 @@ generar_uuid() {
     fi
 }
 
+# Genera una llave con el hash de los parametros
+generar_llave_hash(){
+    local content="$*"
+    echo "$(echo "${content}" | sha256sum | cut -d' ' -f1 | head -c 32)"
+}
+
 # Función verificación de que variables existan
 verificar_variables_env() {
     local errores=0
