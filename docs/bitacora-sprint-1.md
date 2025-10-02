@@ -93,3 +93,70 @@ python3 src/server.py
 ```
 
 El servidor se iniciará en modo debug y mostrará la URL de acceso en la consola.
+
+### Primera prueba Bats
+
+Resumen de lo avanzado:
+
+- Creamos la prueba Bats mínima "cliente reintenta en caso de timeout" siguiendo el método RGR (rojo, verde, refactorizar) sin que todavía exista el ejecutable cliente.sh que queremos testear.
+- También integramos en nuestro makefile con el target "deps" la instalación automática de dependencias complementarias a Bats. Make clone repos externos como bats-support y bats-assert de manera fácilmente extensible gracias a la declaración de estos en forma de pares clave-valor en el makefile.
+- Además, si en el futuro añadimos más dependencias para nuestras preubas Bats, solo tenemos que volver a correr "make deps" para clonar los nuevos repos requeridos.
+- Por último, como estamos clonando repositorios externos, para evitar que git los añada al hacer un "git add ." los estamos ignorando en la ruta tests/test_helper, que es donde se instalan.
+
+#### Ejecución manual de la primera prueba
+
+Creamos la prueba mínima "cliente reintenta en caso de timeout" en el archivo test/retries.bats. 
+Si queremos ejecutarla manualmente, desde la raíz del repo ejecutamos este comando:
+
+```bash
+bats tests/retries.bats
+```
+
+Para lograr esto previamente necesitamos clonar los repositorios que complementan nuestro Bats en la ruta tests/test_helper con el comando "git clone --depth 1 <repo-url> <ruta-local>". 
+Estos son los repos que usamos por ahora:
+
+- bats-support: https://github.com/bats-core/bats-support.git
+- bats-assert: https://github.com/bats-core/bats-assert.git
+
+La prueba falla al no existir todavía el script de CLI que queremos testear:
+
+```txt
+-- output does not contain substring --
+   substring : Intento 3
+   output    : /home/aldolunab/.local/lib/bats-core/test_functions.bash: line 158: cliente.sh: command not found
+```
+
+También se agregó una función setup_file() para crear el directorio out/ si no existiera, y un teardown() para crear reportes de la salida y código de estado al finalizar cada prueba.
+
+#### Ejecución automatizada de la prueba
+
+Integramos en el Makefile un target "deps" para instalar dependencias de Bats, y este target a su vez es prerequisito del target "test", el cual ejecuta todas las pruebas en el directorio tests de extensión .bats como retries.bats con el comando generalizado "bats tests/*.bats". Los targets dependen entre sí de esta forma:
+
+```txt
+(target real para clonar repos) -> deps -> test
+```
+
+Entonces, basta con ejecutar este comando para correr las pruebas bats:
+
+```bash
+make test
+```
+
+#### Extender las dependencias de las pruebas bats
+
+Diseñamos la instalación de las pruebas bats para que fácilmente extensible. Para agregar más dependencias de Bats solo añadimos un par clave-valor separado con el signo igual (=) en la variable BATS_MODULES, así:
+
+```Makefile
+BATS_MODULES := \
+	bats-support=https://github.com/bats-core/bats-support.git \
+	bats-assert=https://github.com/bats-core/bats-assert.git \
+  nueva-dependencia=url-del-repo-complementario-de-bats
+```
+
+Para instalar la nueva dependencia ejecutamos el comando:
+
+```bash
+make deps
+```
+
+Se clonará el repo en la ruta tests/test_helper/nueva-dependencia.
