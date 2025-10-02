@@ -29,6 +29,56 @@ make prepare
 ```
 Luego, editar el .env según sus necesidades.
 
+## Servidor Flask
+
+El servidor utiliza las variables de entorno para el `HOST` y el `PORT`, evitando valores harcodeados, por defecto se ejecuta en la direccion `127.0.0.1:8080`. Para ejecutar el servidor puede elegir las siguientes opciones.
+
+### Opción 1: Configuración manual
+Ejecute desde la raíz del proyecto:
+```bash
+python3 src/server.py
+```
+
+### Opción 2: Configuración automática con Makefile
+Ejecute desde la raíz del proyecto:
+```bash
+make server
+```
+
+## Cliente
+
+El Cliente utiliza las variables de entorno para el `MAX_RETRIES` y el `BACKOFF_MS`, evitando valores harcodeados. El cliente puede realizar peticiones `GET`, `POST`, `PUT`. Para ejecutar el servidor puede elegir las siguientes opciones.
+
+### Opción 1: Configuración manual
+Para una peticion `GET` ejecuta el siguiente comando con una cierta **URL**
+```bash 
+chmod +x src/cliente.sh
+./src/cliente.sh GET <URL>
+```
+
+Para una peticion `POST` ejecuta el siguiente comando con una cierta **URL** y un body opcional (se tiene un body por defecto). 
+```bash 
+chmod +x src/cliente.sh
+./src/cliente.sh POST <URL> <BODY>
+```
+Tambien se cuenta con una flag para la asignacion de una llave para la idempotencia del metodo `POST`, la flag es `--idempotencykey` y es obligatorio colocar una llave al poner la flag.
+
+```bash 
+./src/cliente.sh POST <URL> <BODY> --idempotencykey <KEY>
+```
+Para una peticion `PUT` ejecuta el siguiente comando con una cierta **URL** y un body opcional (se tiene un body por defecto). 
+```bash 
+chmod +x src/cliente.sh
+./src/cliente.sh PUT <URL> <BODY>
+```
+
+### Opción 2: Configuración automática con Makefile
+Ejecute desde la raíz del proyecto:
+```bash
+make run
+```
+Se ejecuta las peticiones `GET`, `POST`, `PUT`, en ese orden. Y con **URLs** y **BODYs** definidos por defecto.
+
 ## Ejecución de pruebas
 
 ### Ejecución automatizada de pruebas
