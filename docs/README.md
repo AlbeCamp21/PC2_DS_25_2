@@ -28,3 +28,25 @@ Ejecute desde la raíz del proyecto:
 make prepare
 ```
 Luego, editar el .env según sus necesidades.
+
+## Ejecución de pruebas
+
+### Ejecución automatizada de pruebas
+
+Ejecuta desde la raíz del proyecto:
+
+```bash
+make test
+```
+
+### Extensión de las dependencias de las pruebas
+
+Para añadir más dependencias de Bats, como bats-file, agrega a la variable BATS_MODULES el nombre de la nueva dependencia, signo igual (=) y url del repo con .git al final:
+
+```Makefile
+BATS_MODULES := \
+	bats-support=https://github.com/bats-core/bats-support.git \
+	bats-assert=https://github.com/bats-core/bats-assert.git \
+    nueva-dependencia=repo-url
+```
+
