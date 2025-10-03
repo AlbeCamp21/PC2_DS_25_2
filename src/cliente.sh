@@ -72,7 +72,7 @@ do_request() {
                 ;;
         esac
 
-        status_code=$(eval $curl_comand 2>/dev/null | sed 's/.*HTTP Status: //')
+        status_code=$(eval $curl_comand 2>/dev/null | sed 's/.*HTTP Status: //' || echo "$EXIT_FAILURE_NETWORK")
         local curl_exit_code=$?
         local attempt_end=$(now_ms)
         local attempt_duration=$((attempt_end - attempt_start))
