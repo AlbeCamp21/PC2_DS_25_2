@@ -12,14 +12,22 @@ grisColor="\e[0;37m\033[1m"
 # Función cargar variables del .env
 cargar_env() {
     if [ -f ".env" ]; then
-        source ".env"
-        echo -e "\n${verdeColor}[+]${finColor} Variables .env cargadas"
+        # Exporta solo las variables que no estén definidas en el entorno
+        while IFS='=' read -r key value; do
+            # Ignora líneas vacías o comentarios
+            [[ -z "$key" || "$key" =~ ^# ]] && continue
+
+            # Si la variable ya existe, no la sobreescribas
+            if [ -z "${!key}" ]; then
+                export "$key=$value"
+            fi
+        done < ".env"
         return 0
     else
-        echo -e "\n${rojoColor}[!]${finColor} ${grisColor}ERROR: No se encontró '.env'${finColor}" >&2
         return 1
     fi
 }
+
 
 # Función logs con timestamp
 log_con_tiempo() {

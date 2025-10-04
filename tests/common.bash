@@ -1,3 +1,6 @@
+export MAX_RETRIES="${MAX_RETRIES:-3}"
+export BACKOFF_MS="${BACKOFF_MS:-10}"
+
 setup_file() {
     mkdir -p out
 }
