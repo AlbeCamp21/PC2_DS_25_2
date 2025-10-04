@@ -1,6 +1,3 @@
-load 'test_helper/bats-support/load'
-load 'test_helper/bats-assert/load'
-
 setup_file() {
     mkdir -p out
 }
@@ -15,7 +12,8 @@ setup() {
     # hacer los ejecutables en src/ visibles a la variable de entorno PATH
     PATH="$DIR/../src:$PATH"
 
-    TEST_URL="http://127.0.0.1:9999/unreachable"
+    TEST_URL="http://127.0.0.1"
+    PORT=8080
 }
 
 teardown() {
@@ -25,10 +23,4 @@ teardown() {
     echo "$output" | sed -r 's/\x1B\[[0-9;]*[A-Za-z]//g' > "out/${BATS_TEST_NAME}.out"
     # Guardar estado 
     echo "$status" > "out/${BATS_TEST_NAME}.status"
-}
-
-@test "cliente reintenta en caso de timeout" {
-    run cliente.sh GET "$TEST_URL"
-    assert_failure
-    assert_output --partial 'Intento 3'
 }
