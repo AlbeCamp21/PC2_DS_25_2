@@ -39,6 +39,16 @@ check-env: ## Verificar que MAX_RETRIES y BACKOFF_MS están definidos en .env
 		echo -e "\t[!] ERROR: BACKOFF_MS no definida"; exit 1; \
 	else \
 		echo -e "\t[+] BACKOFF_MS = $$BACKOFF_MS"; \
+	fi && \
+	if [ -z "$$HOST" ]; then \
+		echo -e "\t[!] ERROR: HOST no definida"; exit 1; \
+	else \
+		echo -e "\t[+] BACKOFF_MS = $$HOST"; \
+	fi && \
+	if [ -z "$$PORT" ]; then \
+		echo -e "\t[!] ERROR: PORT no definida"; exit 1; \
+	else \
+		echo -e "\t[+] BACKOFF_MS = $$PORT"; \
 	fi
 	@echo -e "\n[+] Variables verificadas correctamente"
 
