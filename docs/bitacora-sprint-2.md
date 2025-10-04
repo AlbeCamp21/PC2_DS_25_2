@@ -137,3 +137,102 @@ chmod +x src/cliente.sh
 ```
 
 El cliente creará automáticamente el directorio `out/` para almacenar métricas, logs, claves de idempotencia y respuestas, mostrando información detallada sobre el progreso de las peticiones con códigos de color para facilitar la lectura.
+
+## Pruebas End-to-End con Bats
+
+El objetivo actual fue **ampliar y automatizar las pruebas end-to-end** (E2E), verificando la interacción real entre los componentes cliente.sh y server.py mediante el framework Bats.
+
+### Objetivos
+
+1. **Refactorizar la estructura de pruebas** para permitir la extensión modular de casos de test.
+2. **Centralizar la configuración común de entorno** (hooks de Bats).
+3. **Automatizar la ejecución completa de pruebas** desde el Makefile, incluyendo:
+
+   - Levantamiento y apagado del servidor.
+   - Creación de entorno virtual Python.
+   - Instalación de dependencias.
+4. **Ampliar la cobertura** con nuevos casos positivos y negativos para los métodos HTTP `GET`, `POST`, `PUT` y manejo de *retries*.
+
+### Refactorización Realizada
+
+#### Estructura modular de pruebas
+
+Se reorganizaron los tests en varios archivos:
+
+| Archivo                   | Propósito principal                                                           |
+| ------------------------- | ----------------------------------------------------------------------------- |
+| `tests/test_retries.bats` | Casos de reintentos por timeout o falta de respuesta del servidor.            |
+| `tests/test_get.bats`     | Pruebas del endpoint `GET /courses`.                                          |
+| `tests/test_post.bats`    | Pruebas de creación (`POST /create`) e idempotencia.                          |
+| `tests/test_put.bats`     | Pruebas de actualización (`PUT /update`).                                     |
+| `tests/common.bash`       | Hooks comunes (`setup_file`, `setup`, `teardown`) y configuración de entorno. |
+
+Los archivos `.bats` cargan `common.bash` para compartir configuración y utilidades.
+
+#### Hooks centralizados
+
+El nuevo archivo `common.bash` define:
+
+- **`setup_file()`**: crea el directorio `out/` para almacenar resultados.
+- **`setup()`**: configura `PATH`, URL base y puerto del servidor.
+- **`teardown()`**: limpia las secuencias ANSI de la salida y guarda logs individuales de cada prueba:
+
+  - `out/<nombre_prueba>.out` - salida limpia.
+  - `out/<nombre_prueba>.status` - código de salida.
+
+### Automatización con Makefile
+
+Se actualizó el Makefile para incluir un flujo de pruebas completamente automatizado:
+
+#### Nuevo target `prepare`
+
+Crea y configura un entorno de desarrollo reproducible:
+
+1. Copia `.env.example` -> `.env`.
+2. Da permisos de ejecución a los scripts Bash.
+3. Crea entorno virtual `.venv` (si no existe).
+4. Instala dependencias desde `requirements.txt`.
+
+#### Nuevo target `test`
+
+Ejecuta las pruebas end-to-end:
+
+1. Levanta temporalmente el servidor Python.
+2. Corre todos los tests Bats (`tests/*.bats`).
+3. Detiene el servidor automáticamente.
+
+### Casos de Prueba Implementados
+
+#### `test_retries.bats`
+
+Verifica que el cliente reintente hasta 3 veces ante *timeout* o puertos inaccesibles (assert_output --partial 'Intento 3'), y evita falsos positivos validando que no sean más de 3 (refute_output --partial 'Intento 4')
+
+#### `test_get.bats`
+
+- **Positivo:** `GET /courses` retorna status 200 y mensaje de éxito.
+- **Negativo:** URL con esquema inválido (`ftp://...`) genera error.
+
+#### `test_post.bats`
+
+- **Positivos:**
+
+  - Creación de curso (`Status: 201`).
+  - Soporte para `--idempotencykey` custom.
+- **Negativos:**
+
+  - Falta de valor en `--idempotencykey` produce error.
+  - Repetir `POST` con mismo `idempotencykey` retorna `409 Conflict`.
+
+#### `test_put.bats`
+
+- **Positivo:** `PUT /update` actualiza curso existente correctamente.
+- **Negativo:** reintento automático si el servidor no responde.
+
+### Resultados Esperados
+
+| Categoría                 | Resultado                             |
+| ------------------------- | ------------------------------------- |
+| Configuración del entorno | Exitosa (entorno virtual funcional).  |
+| Ejecución de pruebas      | Completada sin intervención manual.   |
+| Logs individuales         | Generados en carpeta `out/`.          |
+| Cobertura de endpoints    | GET, POST, PUT, manejo de reintentos. |

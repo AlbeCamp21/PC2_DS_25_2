@@ -6,6 +6,8 @@ OUT_DIR := out
 DIST_DIR := dist
 TEST_DIR := tests
 BATS_HELPER_DIR:= $(TEST_DIR)/test_helper
+VENV :=.venv
+PY :=$(VENV)/bin/python
 
 # Timestamp fijo para reproducibilidad  
 BUILD_TIME = 2025-01-01 00:00:00
@@ -61,6 +63,15 @@ prepare: ## Crear entorno de trabajo
 	@cp docs/.env.example .env
 	@chmod +x src/*.sh
 	@echo -e "\n[+] Entorno creado correctamente" 
+	@if [ ! -d $(VENV) ]; then \
+		echo -e "\n[+] Creando entorno virtual de Python..."; \
+		python3 -m venv $(VENV); \
+	else \
+		echo -e "\n[+] Entorno virtual ya existe, usando $(VENV)"; \
+	fi
+	@echo -e "\n[+] Instalando dependencias desde requirements.txt..."
+	@. $(VENV)/bin/activate && pip install --upgrade pip && pip install -r requirements.txt
+	@echo -e "\n[+] Entorno creado correctamente"
 
 build: $(OUT_DIR)/build.log ## Generar artefactos intermedios en out/
 
@@ -78,11 +89,15 @@ $(OUT_DIR)/build.log: src/*.sh src/*.py Makefile
 
 server: ## Levantar servidor Flask en background
 	@echo -e "\n[+] Levantando servidor Flask..."
-	@python src/server.py
+	@$(PY) src/server.py
 
-test: deps ## Ejecutar tests
+test: deps prepare ## Ejecutar tests
 	@echo -e "\n[+] Ejecutando pruebas..."
-	bats tests/*.bats
+	@echo "Levantando servidor..."
+	@$(PY) src/server.py & SERVER_PID=$$!; \
+	sleep 1; \
+	bats tests/*.bats; \
+	kill $$SERVER_PID
 
 run: ## Ejecutar cliente CLI con métricas por defecto
 	@echo -e "\n[+] Ejecutando cliente CLI..."
