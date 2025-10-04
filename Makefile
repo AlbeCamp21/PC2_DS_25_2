@@ -91,7 +91,7 @@ server: ## Levantar servidor Flask en background
 	@echo -e "\n[+] Levantando servidor Flask..."
 	@$(PY) src/server.py
 
-test: deps ## Ejecutar tests
+test: deps prepare ## Ejecutar tests
 	@echo -e "\n[+] Ejecutando pruebas..."
 	@echo "Levantando servidor..."
 	@$(PY) src/server.py & SERVER_PID=$$!; \
