@@ -1,6 +1,6 @@
 # Variables
 SHELL := /bin/bash
-.PHONY: check-env tools prepare build test server run pack clean help
+.PHONY: check-env tools prepare build test server run pack clean help PRUEBA
 .DEFAULT_GOAL := help
 OUT_DIR := out
 DIST_DIR := dist
@@ -75,11 +75,11 @@ test: deps ## Ejecutar tests
 run: ## Ejecutar cliente CLI con métricas por defecto
 	@echo -e "\n[+] Ejecutando cliente CLI..."
 	@echo -e "\n[+] 1. GET - Listar cursos"
-	@bash src/cliente.sh GET http://127.0.0.1:8080/courses
+	@source .env && bash src/cliente.sh GET "http://$$HOST:$$PORT/courses"
 	@echo -e "\n[+] 2. POST - Crear curso"
-	@bash src/cliente.sh POST http://127.0.0.1:8080/create
+	@source .env && bash src/cliente.sh POST "http://$$HOST:$$PORT/create"
 	@echo -e "\n[+] 3. PUT - Actualizar curso"
-	@bash src/cliente.sh PUT http://127.0.0.1:8080/update
+	@source .env && bash src/cliente.sh PUT "http://$$HOST:$$PORT/update"
 
 pack: ## Empaquetar proyecto para distribución (tar.gz)
 	@echo -e "\n[+] Empaquetando proyecto..."
