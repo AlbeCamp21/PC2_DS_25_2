@@ -9,6 +9,8 @@ Cliente CLI que implementa llamadas HTTP (GET/PUT/POST) con reintentos automáti
 |----------|-------------|-------------------|-------------------|
 | `MAX_RETRIES` | Número máximo de reintentos antes de fallar | 3 | 1-10 |
 | `BACKOFF_MS` | Tiempo base de espera en milisegundos para backoff exponencial | 500 | 100-5000 |
+| `HOST` | Dirección IP o nombre de host del servidor de destino | 127.0.0.1 | localhost, IPs válidas |
+| `PORT` | Puerto del servidor donde se ejecuta la API | 8080 | 1024-65535 |
 
 ## Configuración del entorno
 
