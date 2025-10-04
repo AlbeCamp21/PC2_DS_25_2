@@ -44,6 +44,16 @@ check-env: ## Verificar que MAX_RETRIES y BACKOFF_MS están definidos en .env
 		echo -e "\t[!] ERROR: BACKOFF_MS no definida"; exit 1; \
 	else \
 		echo -e "\t[+] BACKOFF_MS = $$BACKOFF_MS"; \
+	fi && \
+	if [ -z "$$HOST" ]; then \
+		echo -e "\t[!] ERROR: HOST no definida"; exit 1; \
+	else \
+		echo -e "\t[+] BACKOFF_MS = $$HOST"; \
+	fi && \
+	if [ -z "$$PORT" ]; then \
+		echo -e "\t[!] ERROR: PORT no definida"; exit 1; \
+	else \
+		echo -e "\t[+] BACKOFF_MS = $$PORT"; \
 	fi
 	@echo -e "\n[+] Variables verificadas correctamente"
 
@@ -102,11 +112,11 @@ test: deps prepare ## Ejecutar tests
 run: ## Ejecutar cliente CLI con métricas por defecto
 	@echo -e "\n[+] Ejecutando cliente CLI..."
 	@echo -e "\n[+] 1. GET - Listar cursos"
-	@bash src/cliente.sh GET http://127.0.0.1:8080/courses
+	@source .env && bash src/cliente.sh GET "http://$$HOST:$$PORT/courses"
 	@echo -e "\n[+] 2. POST - Crear curso"
-	@bash src/cliente.sh POST http://127.0.0.1:8080/create
+	@source .env && bash src/cliente.sh POST "http://$$HOST:$$PORT/create"
 	@echo -e "\n[+] 3. PUT - Actualizar curso"
-	@bash src/cliente.sh PUT http://127.0.0.1:8080/update
+	@source .env && bash src/cliente.sh PUT "http://$$HOST:$$PORT/update"
 
 pack: build ## Empaquetar proyecto para distribución (tar.gz)
 	@mkdir -p $(DIST_DIR)
