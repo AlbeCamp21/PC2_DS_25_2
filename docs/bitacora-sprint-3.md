@@ -71,3 +71,40 @@ $ touch src/cliente.sh  # Simulando cambio en un archivo
 $ make build
 [+] Build completado   # Se rebuildeará porque detecta cambios
 ```
+
+Perfecto 👍 Aquí tienes una **bitácora técnica redactada en estilo profesional**, clara y concisa, que documenta tus últimos avances y decisiones:
+
+---
+
+## Pruebas de reintentos y manejo de entorno
+
+### Cambios realizados
+
+1. **Nueva lógica de carga de entorno en `utils.sh`**
+   Se modificó la función `cargar_env()` para que las variables definidas en el entorno del proceso no sean sobreescritas por las del archivo `.env`.
+
+   Esto permite inyectar variables específicas por prueba sin perder compatibilidad con la configuración global del proyecto.
+   Resultado: el entorno de ejecución se volvió **más flexible y predecible** durante las pruebas.
+
+2. **Preconfiguración de entorno común (`common.bash`)**
+   Se agregaron valores por defecto que funcionan como **fixtures** globales para todas las pruebas.
+
+   De esta forma, las pruebas que no requieren personalización usan estos valores base, reduciendo el tiempo total de ejecución (por el `BACKOFF_MS` reducido).
+
+3. **Nuevas pruebas en `test_retries.bats`**
+
+   - **Prueba 1:** Verifica que el cliente respete la cantidad de reintentos cuando `MAX_RETRIES=2`.
+   - **Prueba 2:** Extiende la verificación para `MAX_RETRIES=3`, asegurando aislamiento entre tests.
+   - **Prueba 3:** Comprueba que el cliente respete el tiempo total de espera derivado de `BACKOFF_MS`, midiendo la duración total de ejecución y asegurando que esté dentro de un rango establecido:
+
+### Resultados
+
+* Las pruebas ahora **corren en aislamiento completo**, sin interferencias del entorno global ni dependencias del archivo `.env`.
+* Se validó exitosamente que:
+
+  * `MAX_RETRIES` se respete en cada ejecución.
+  * El cliente espere el tiempo configurado por `BACKOFF_MS`.
+  * El entorno base (fixtures) acelere las pruebas que no dependen del tiempo.
+
+Esta refactorización mejora significativamente la **modularidad**, **reproducibilidad** y **velocidad** de la suite de pruebas Bats.
+Cada prueba puede ahora definir su propio entorno sin comprometer el comportamiento global del cliente, cumpliendo con las mejores prácticas de **testeo aislado y controlado por entorno**.
