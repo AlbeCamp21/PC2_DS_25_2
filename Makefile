@@ -1,11 +1,16 @@
 # Variables
 SHELL := /bin/bash
-.PHONY: check-env tools prepare build test server run pack clean help PRUEBA
+.PHONY: check-env tools prepare test server run pack clean help
 .DEFAULT_GOAL := help
 OUT_DIR := out
 DIST_DIR := dist
 TEST_DIR := tests
 BATS_HELPER_DIR:= $(TEST_DIR)/test_helper
+VENV :=.venv
+PY :=$(VENV)/bin/python
+
+# Timestamp fijo para reproducibilidad  
+BUILD_TIME = 2025-01-01 00:00:00
 
 # pares "nombre=repo", extensible desde un solo lugar
 BATS_MODULES := \
@@ -68,19 +73,41 @@ prepare: ## Crear entorno de trabajo
 	@cp docs/.env.example .env
 	@chmod +x src/*.sh
 	@echo -e "\n[+] Entorno creado correctamente" 
+	@if [ ! -d $(VENV) ]; then \
+		echo -e "\n[+] Creando entorno virtual de Python..."; \
+		python3 -m venv $(VENV); \
+	else \
+		echo -e "\n[+] Entorno virtual ya existe, usando $(VENV)"; \
+	fi
+	@echo -e "\n[+] Instalando dependencias desde requirements.txt..."
+	@. $(VENV)/bin/activate && pip install --upgrade pip && pip install -r requirements.txt
+	@echo -e "\n[+] Entorno creado correctamente"
 
-build: ## Generar artefactos intermedios en out/
-	@echo -e "\n[+] Creando directorios..."
+build: $(OUT_DIR)/build.log ## Generar artefactos intermedios en out/
+
+$(OUT_DIR)/build.log: src/*.sh src/*.py Makefile
 	@mkdir -p $(OUT_DIR)
+	@echo -e "[+] Build Log" > $@
+	@echo "Timestamp: $(BUILD_TIME)" >> $@
+	@echo "Validando sintaxis bash..." >> $@
+	@bash -n src/cliente.sh && echo -e "\t[+] cliente.sh OK" >> $@ || echo -e "\t[!] cliente.sh ERROR" >> $@
+	@bash -n src/utils.sh && echo -e "\t[+] utils.sh OK" >> $@ || echo -e "\t[!] utils.sh ERROR" >> $@
+	@echo "Validando sintaxis Python..." >> $@
+	@python3 -m py_compile src/server.py && echo -e "\t[+] server.py OK" >> $@ || echo -e "\t[!] server.py ERROR" >> $@
+	@echo "Build completado" >> $@
 	@echo -e "\n[+] Build completado"
 
 server: ## Levantar servidor Flask en background
 	@echo -e "\n[+] Levantando servidor Flask..."
-	@python src/server.py
+	@$(PY) src/server.py
 
-test: deps ## Ejecutar tests
+test: deps prepare ## Ejecutar tests
 	@echo -e "\n[+] Ejecutando pruebas..."
-	bats tests/*.bats
+	@echo "Levantando servidor..."
+	@$(PY) src/server.py & SERVER_PID=$$!; \
+	sleep 1; \
+	bats tests/*.bats; \
+	kill $$SERVER_PID
 
 run: ## Ejecutar cliente CLI con métricas por defecto
 	@echo -e "\n[+] Ejecutando cliente CLI..."
@@ -91,8 +118,13 @@ run: ## Ejecutar cliente CLI con métricas por defecto
 	@echo -e "\n[+] 3. PUT - Actualizar curso"
 	@source .env && bash src/cliente.sh PUT "http://$$HOST:$$PORT/update"
 
-pack: ## Empaquetar proyecto para distribución (tar.gz)
-	@echo -e "\n[+] Empaquetando proyecto..."
+pack: build ## Empaquetar proyecto para distribución (tar.gz)
+	@mkdir -p $(DIST_DIR)
+	@tar --mtime='$(BUILD_TIME)' --sort=name --owner=0 --group=0 \
+		-czf $(DIST_DIR)/proyecto10.tar.gz \
+		--exclude='$(OUT_DIR)' --exclude='$(DIST_DIR)' --exclude='.git' --exclude='.env' \
+		src/ docs/ tests/ Makefile requirements.txt README.md
+	@echo -e "\n[+] Paquete creado: $(DIST_DIR)/proyecto10.tar.gz"
 
 clean: ## Limpiar archivos generados
 	@echo -e "\n[+] Limpiando directorios/archivos generados..."
