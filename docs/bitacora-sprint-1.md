@@ -1,5 +1,7 @@
 # Bitácora Sprint 1
 
+Video realizado por el sprint 1: [Sprint 1](https://youtu.be/5Nd_tp8QN3k)
+
 ### **Carga de variables**
 
 Debido a que es una mala práctica añadir el archivo `.env` al repositorio remoto, entonces se crea el archivo `docs/.env.example`, lo cual ayudará a los miembros del grupo (o personas externas) a tener una ídea del formato que debe tener el archivo `.env` para este proyecto.
