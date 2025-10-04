@@ -73,6 +73,7 @@ chmod +x src/cliente.sh
 ```
 
 ### Opción 2: Configuración automática con Makefile
+
 Ejecute desde la raíz del proyecto:
 ```bash
 make run
@@ -81,6 +82,8 @@ Se ejecuta las peticiones `GET`, `POST`, `PUT`, en ese orden. Y con **URLs** y *
 
 ## Ejecución de pruebas
 
+Las pruebas están implementadas con Bats y cubren la interacción completa entre el cliente (cliente.sh) y el servidor (server.py), actuando como pruebas end-to-end (E2E). Cada conjunto de pruebas valida comportamientos específicos de los endpoints (GET, POST, PUT) y escenarios de reintento ante fallas de red. Cada archivo de prueba `tests/nombre_prueba.bats` genera su salida limpia en out/<nombre_prueba>.out y el código de estado en out/<nombre_prueba>.status.
+
 ### Ejecución automatizada de pruebas
 
 Ejecuta desde la raíz del proyecto:
@@ -88,6 +91,12 @@ Ejecuta desde la raíz del proyecto:
 ```bash
 make test
 ```
+
+Este comando:
+- Crea el entorno virtual `.venv/` (si no existe) con dependencias instaladas desde `requirements.txt` para poder levantar el servidor.
+- Levanta temporalmente el servidor (server.py) en segundo plano.
+- Ejecuta todos los archivos .bats dentro de tests/ contra el cliente (cliente.sh).
+- Detiene el servidor al finalizar las pruebas.
 
 ### Extensión de las dependencias de las pruebas
 
