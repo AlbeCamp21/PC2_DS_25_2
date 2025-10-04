@@ -1,5 +1,7 @@
 # Bitácora Sprint 2
 
+Video realizado por el sprint 2: [Sprint 2](https://youtu.be/TLqKNjE7PEQ)
+
 ## **Cliente HTTP CLI**
 
 Se implementó un cliente HTTP de línea de comandos robusto con capacidades de reintentos, backoff exponencial, métricas de latencia y **soporte de idempotencia**. El cliente fue desarrollado en el archivo `src/cliente.sh` con las siguientes características:
