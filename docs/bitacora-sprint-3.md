@@ -1,5 +1,7 @@
 # Bitácora Sprint 3
 
+Video realizado por el sprint 3: [Sprint 3](https://youtu.be/qP6ESG5FVBQ)
+
 ## Empaquetado reproducible y caché incremental
 
 ### Target `pack` - Empaquetado reproducible
@@ -71,8 +73,6 @@ $ touch src/cliente.sh  # Simulando cambio en un archivo
 $ make build
 [+] Build completado   # Se rebuildeará porque detecta cambios
 ```
-
-Perfecto 👍 Aquí tienes una **bitácora técnica redactada en estilo profesional**, clara y concisa, que documenta tus últimos avances y decisiones:
 
 ---
 
